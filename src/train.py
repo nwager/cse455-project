@@ -1,11 +1,11 @@
 import torch
 import torchvision
 
-from utils import STATE_DICT_PATH
+from utils import STATE_DICT_PATH, MODEL_CONSTRUCTOR, MODEL_WEIGHTS
 
 def main():
-  model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(
-    weights=torchvision.models.detection.FasterRCNN_ResNet50_FPN_V2_Weights.COCO_V1
+  model = MODEL_CONSTRUCTOR(
+    weights=MODEL_WEIGHTS
   )
   model.train()
 

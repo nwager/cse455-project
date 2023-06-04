@@ -1,3 +1,6 @@
+import torch
+import torchvision
+
 # coco
 COCO_CLASSES = [
   '__background__', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
@@ -20,3 +23,7 @@ STATE_DICT_PATH = './state_dict.pt'
 def bbox_to_corners(bbox):
   x1, y1, x2, y2 = bbox
   return ((x1, y1), (x2, y1), (x2, y2), (x1, y2))
+
+MODEL_CONSTRUCTOR =  torchvision.models.detection.fasterrcnn_resnet50_fpn_v2
+MODEL_WEIGHTS = torchvision.models.detection.FasterRCNN_ResNet50_FPN_V2_Weights.COCO_V1
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
