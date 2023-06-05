@@ -24,6 +24,10 @@ def bbox_to_corners(bbox):
   x1, y1, x2, y2 = bbox
   return ((x1, y1), (x2, y1), (x2, y2), (x1, y2))
 
-MODEL_CONSTRUCTOR =  torchvision.models.detection.fasterrcnn_resnet50_fpn_v2
-MODEL_WEIGHTS = torchvision.models.detection.FasterRCNN_ResNet50_FPN_V2_Weights.COCO_V1
+MODEL_CONSTRUCTOR =  torchvision.models.detection.fasterrcnn_mobilenet_v3_large_fpn
+MODEL_WEIGHTS = 'COCO_V1'
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+ModelType = torchvision.models.detection.FasterRCNN
+
+DATASET_IMAGES = '../data/Oxford_IIIT_Pet_Dataset/images'
+DATASET_TRIMAPS = '../data/Oxford_IIIT_Pet_Dataset/annotations/trimaps'

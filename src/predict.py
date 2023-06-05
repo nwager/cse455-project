@@ -2,6 +2,7 @@ import torch
 import torchvision
 import numpy as np
 from shapely.geometry import Polygon
+from PIL import Image
 import typing
 
 from utils import COCO_NAME_TO_IDX, bbox_to_corners, MODEL_CONSTRUCTOR, DEVICE
@@ -18,7 +19,7 @@ class KBDPredictor:
     self.threshold = threshold
 
   @torch.no_grad()
-  def predict(self, img: np.ndarray) -> typing.Tuple[bool, torch.Tensor, torch.Tensor]:
+  def predict(self, img: np.ndarray | Image.Image) -> typing.Tuple[bool, torch.Tensor, torch.Tensor]:
     """
     Given a (ndarray) image, predict whether it shows a cat on a keyboard.
     Args:
@@ -26,7 +27,7 @@ class KBDPredictor:
     Returns:
       (Tuple[bool, Tensor, Tensor]) Tuple where first element is whether
         there is a cat on the keyboard and the second and third are Tensors
-        of cat and keyboard bounding boxes of shape N x 4 each.
+        of cat and keyboard bounding boxes of shape N x 4 and M x 4.
     """
     transformed_img = torchvision.transforms.transforms.ToTensor()(
       torchvision.transforms.ToPILImage()(img)
@@ -47,18 +48,28 @@ class KBDPredictor:
     cat_results = parsed[parsed[:, 0] == COCO_NAME_TO_IDX['cat']]
     kb_results = parsed[parsed[:, 0] == COCO_NAME_TO_IDX['keyboard']]
 
-    if (len(cat_results) == 0 or len(kb_results) == 0):
-      return (False, torch.tensor([]), torch.tensor([]))
-    
-    cat_bboxes = cat_results[:, 2:]
-    cat_full_bb = torch.concat([cat_bboxes[:, :2].max(dim=0)[0], cat_bboxes[:, 2:].max(dim=0)[0]])
-    
-    kb_bboxes = kb_results[:, 2:]
-    kb_full_bb = torch.concat([kb_bboxes[:, :2].max(dim=0)[0], kb_bboxes[:, 2:].max(dim=0)[0]])
+    # init return values to false/empty
+    cat_bboxes, kb_bboxes = torch.tensor([]), torch.tensor([])
+    cat_poly, kb_poly = None, None
+    kb_is_covered = False
 
-    cat_poly = Polygon(bbox_to_corners(cat_full_bb))
-    kb_poly = Polygon(bbox_to_corners(kb_full_bb))
-    ixn = cat_poly.intersection(kb_poly)
-    kb_cover = ixn.area / kb_poly.area
+    if (len(cat_results) > 0):
+      cat_bboxes = cat_results[:, 2:]
+      cat_full_bb = torch.concat(
+        [cat_bboxes[:, :2].max(dim=0)[0], cat_bboxes[:, 2:].max(dim=0)[0]]
+      )
+      cat_poly = Polygon(bbox_to_corners(cat_full_bb))
 
-    return (kb_cover > self.threshold, cat_bboxes, kb_bboxes)
+    if (len(kb_results) > 0):
+      kb_bboxes = kb_results[:, 2:]
+      kb_full_bb = torch.concat(
+        [kb_bboxes[:, :2].max(dim=0)[0], kb_bboxes[:, 2:].max(dim=0)[0]]
+      )
+      kb_poly = Polygon(bbox_to_corners(kb_full_bb))
+
+    if cat_poly and kb_poly:
+      ixn = cat_poly.intersection(kb_poly)
+      kb_cover_frac = ixn.area / kb_poly.area
+      kb_is_covered = kb_cover_frac > self.threshold
+
+    return (kb_is_covered > self.threshold, cat_bboxes, kb_bboxes)

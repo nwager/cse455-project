@@ -2,6 +2,7 @@ import torch
 from PIL import Image, ImageDraw, ImageFont
 import cv2 as cv
 import numpy as np
+import time
 
 from predict import KBDPredictor
 from utils import STATE_DICT_PATH
@@ -13,6 +14,9 @@ def main():
   if not cap.isOpened():
     print("Cannot open camera")
     exit()
+  
+  prev_frame_time = 0
+  new_frame_time = 0
 
   while True:
     ret, frame = cap.read()
@@ -25,13 +29,18 @@ def main():
 
     result, cat_bbs, kb_bbs = predictor.predict(img)
 
+    new_frame_time = time.time()
+    fps = 1 / (new_frame_time - prev_frame_time)
+    prev_frame_time = new_frame_time
+
     img_bb = draw_bbs(img, cat_bbs, kb_bbs)
     draw_msg = ImageDraw.Draw(img_bb)
     if result:
       draw_msg.text((0, 0), "DANGER", font=ImageFont.truetype("arial.ttf", 20), fill='red')
     else:
       draw_msg.text((0, 0), "SAFE", font=ImageFont.truetype("arial.ttf", 20), fill='lime')
-  
+    draw_msg.text((0, 24), f'{fps:.2f}', font=ImageFont.truetype("arial.ttf", 20), fill='red')
+
     # img_bb.show()
     cv.imshow('frame', pil_to_cv(img_bb))
     if cv.waitKey(1) == ord('q'):
