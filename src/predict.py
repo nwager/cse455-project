@@ -5,14 +5,17 @@ from shapely.geometry import Polygon
 from PIL import Image
 import typing
 
-from utils import COCO_NAME_TO_IDX, bbox_to_corners, MODEL_CONSTRUCTOR, DEVICE
+from utils import *
 
 SCORE_THRESHOLD = 0.4
 
 class KBDPredictor:
-  def __init__(self, state_dict_path: str, threshold=0.01):
-    self.model = MODEL_CONSTRUCTOR(weights=None)
-    self.model.load_state_dict(torch.load(state_dict_path))
+  def __init__(self, state_dict_path=None, threshold=0.01):
+    if state_dict_path == None:
+      self.model = MODEL_CONSTRUCTOR(weights=MODEL_WEIGHTS)
+    else:
+      self.model = MODEL_CONSTRUCTOR(weights=None)
+      self.model.load_state_dict(torch.load(state_dict_path))
     self.model.to(DEVICE)
     self.model.eval()
 
