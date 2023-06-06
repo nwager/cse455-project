@@ -88,6 +88,16 @@ code {
   margin: 0 0 0.2em;
 }
 
+.video-embed {
+  display: flex;
+  justify-content: center;
+}
+
+.video-embed iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
 img {
   width: 100%;
 }
