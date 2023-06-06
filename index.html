@@ -3,12 +3,101 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>nwager - CSE 455 Project</title>
+    <title>Noah Wager - CSE 455 Project</title>
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <main>
-      <h1>CSE 455 Final Project</h1>
-      <h2>Noah Wager</h2>
+      <div id="page-title">
+        <h1 class="rainbow-text">Cat Keyboard Defender</h1>
+        <h2>CSE 455 Final Project</h2>
+        <p>Noah Wager</p>
+        <p><a href="https://github.com/nwager/cse455-project">Product Source Code</a></p>
+      </div>
+
+
+      <h2>Objective</h2>
+      
+      <p>Consider the following: a dutiful remote employee leaves their desk unattended and their cat jumps on the keyboard. The cat now has the power to write and send emails to anyone, including important business contacts. History has shown that cats will exploit this power for personal gain, but with the <em>Cat Keyboard Defender</em> security software, humanity will finally be protected.</p>
+
+
+      <h2>Product Overview</h2>
+      
+      <p><em>Cat Keyboard Defender</em> analyzes a webcam video stream to detect when cats are near keyboards. When danger is detected, it creates an alert popup window that persists until the cat moves from the keyboard. This requires a webcam pointed at the targeted keyboard.</p>
+      
+      <p>The product uses a convolutional neural network (Faster R-CNN) to detect the bounding boxes of keyboards and cats, and then analyzes the boxes to determine the threat level. Below is an example of the product in operation.</p>
+
+      <a href="images/butters_kbd_test_frame.jpg"><img src="images/butters_kbd_test_frame.jpg"></a>
+      <figcaption>Figure 1. Testing the program in my local environment (featuring Butters).</figcaption>
+
+
+      <h2>Algorithm</h2>
+      
+      <p><em>Cat Keyboard Defender</em> runs each frame through a pretrained Faster R-CNN model to predict bounding boxes and object labels and discards any that aren't keyboards or cats.</p>
+      
+      <p>It then combines the cat boxes and keyboard boxes into one super-box each, and their overlap area is computed. The model decides whether the kayboard is in danger by comparing the overlap area to the area of the keyboard box.</p>
+      
+      <p>If a threat is detected, the program creates an alert popup that becomes the focused window, diverting keyboard input from other applications. This alert can be ignored by changes windows manually, but if it is closed, it will reappear until the cat has left.</p>
+
+      
+      <h2>Local Environment</h2>
+      
+      <p>I ran code and trained the model on my local machine using Windows and an Nvidia GeForce RTX 3080 graphics card. To test <em>Cat Keyboard Detector</em>, I used my own webcam, keyboard, and cat. I also used a picture of another cat to simulate the presence of one (see Figure 2), since picking up my cat was not always feasible.</p>
+
+      <a href="images/henrypic_kbd_test_frame.jpg"><img src="images/henrypic_kbd_test_frame.jpg"></a>
+      <figcaption>Figure 2. Testing the program in my local environment (featuring a picture of Henry).</figcaption>
+
+      
+      <h2>Preexisting Components</h2>
+      
+      <h3>Model</h3>
+      
+      <p>The main component is the Faster R-CNN model used for inference. The PyTorch model uses a MobileNet backbone for improved speed (since this is a real-time task) and uses pretrained COCO weights so it can identify cats and keyboards. This specific model was chosen because it was the fastest object detection model that comes shipped with PyTorch. Initially, I used Ultralytics' YOLOv5s model but ran into too many runtime issues.</p>
+      
+      <h3>Code</h3>
+      
+      <p>The libraries I used were mainly <a href="https://pytorch.org/">PyTorch</a>, <a href="https://numpy.org/">NumPy</a>, and <a href="https://opencv.org/">OpenCV.</a></p>
+      
+      <p><code>reference.py</code> includes modified versions of helper functions from PyTorch's <a href="https://github.com/pytorch/vision/tree/main/references/detection">vision repository</a> to help with training. To evalutate the model, I calculated 50% mAP using <a href="https://torchmetrics.readthedocs.io/en/stable/">TorchMetrics</a>.</p>
+
+      
+      <h2>Implemented Components and Data</h2>
+      
+      <p>I implemented the main program loop and the logic that handles the model predictions.</p>
+      
+      <p>With the help of <code>reference.py</code> and the Colab demos from class, I implemented the rest of the training code using the <a href="https://www.kaggle.com/datasets/julinmaloof/the-oxfordiiit-pet-dataset">Oxford IIIT Pet Dataset</a> (a segmentation dataset with different types of cats and dogs). This involved creating a custom <code>Dataset</code> class and creating <code>train</code> and <code>evaluation</code> methods.</p>
+
+      
+      <h2>The Training Failure</h2>
+      
+      <p>While I did implement training with the pet dataset, the trained model performed worse in operation. During real-world testing, the custom model was inconsistent in detecting cats and failed to detect any keyboards, while the default pretrained model could do both fairly accurately.</p>
+      
+      <p>This is likely due to the quality of the dataset: most of the images are head-on pictures, and only contain cats and dogs. I chose this dataset because I wanted to improve the model's accuracy in detecting pets so it could catch more cases of keyboard attacks, but the data seems better suited for classification tasks in retrospect. Even if the pet performance improved, it may have detracted from keyboard recognition performance.</p>
+      
+      <h3>Training Results</h3>
+      
+      <p>I trained the pretrained model on an 80-20 split of the data with the following parameters: <code>epochs=20, learning_rate=0.01, momentum=0.9, decay=0.0005</code>. Figure 3 shows the loss per epoch.</p>
+
+      <img src="images/train_loss.png">
+      <figcaption>Figure 3. Training loss over 20 epochs using 80% of the Oxford IIIT Pet Dataset, starting with PyTorch's pretrained COCO weights. This took approximately 8.5 hours.</figcaption>
+
+      <p>From Figure 3, we see that the loss trends downwards slowly. The loss at epoch 20 does not differ greatly from epoch 1, which is to be expected because the model is already extensively trained on COCO.</p>
+      
+      <p>After training was complete, I compared the mAP of the default and custom-trained models on 20% of the data. Before training, the mAP was <code>0.8801</code>. After training, the mAP was <code>0.9623</code>. The values are very high, which may be caused by the simplicity of the data, but regardless there is an improvement after training. However, as previously mentioned, this did not translate to the real-world use case.</p>
+
+      
+      <h2>Conclusions</h2>
+      
+      <h3>Performance</h3>
+      
+      <p>In my local environment, the model consistently achieved around 20 FPS. It was effective in identifying threats with good lighting conditions, but struggled in darker scenes. The bounding boxes were jittery and occasionally disappeared for a few frames at a time, but this noise was mitigated by a moving average filter of the predictions.</p>
+      
+      <h3>Improvements</h3>
+      
+      <p>The noise in the predictions suggest that more training could be done. This would likely require a new dataset of desk environments with and without pets, which simulates the use case.</p>
+
+      <p>The bounding box algorithm yields very coarse predictions. Pixel masks could result in higher accuracy, especially in cases where the cat overlaps the keyboard to the point where the bounding box is incorrect. Additionally, depth information could help distinguish when a cat is actually on the same plane as the keyboard. This is important if the video shows lots of background scenery and not just the desk.</p>
+
     </main>
   </body>
 </html>
